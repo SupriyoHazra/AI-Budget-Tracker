@@ -5,16 +5,17 @@ import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import BackgroundAtmosphere from "./components/BackgroundAtmosphere";
 
-import AIAssistantPage from "./pages/AIAssistantPage";
 import DashboardPage from "./pages/DashboardPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import IncomePage from "./pages/IncomePage";
-import PlaceholderPage from "./pages/PlaceholderPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import GoalsPage from "./pages/GoalsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import AIAssistantPage from "./pages/AIAssistantPage";
 import ReceiptsPage from "./pages/ReceiptsPage";
 import SettingsPage from "./pages/SettingsPage";
+import LoginPage from "./pages/LoginPage";
+import PlaceholderPage from "./pages/PlaceholderPage";
 
 import {
   BarChart3,
@@ -24,6 +25,7 @@ import {
   Wallet,
   Settings,
 } from "lucide-react";
+
 const pages = {
   dashboard: {
     title: "Dashboard",
@@ -31,6 +33,9 @@ const pages = {
 
   expenses: {
     title: "Expenses",
+    description:
+      "Track your spending, understand your habits and stay in control of every expense.",
+    icon: Wallet,
   },
 
   income: {
@@ -74,7 +79,8 @@ const pages = {
       "Keep your financial receipts organized and searchable.",
     icon: FileText,
   },
-    settings: {
+
+  settings: {
     title: "Settings",
     description:
       "Customize your Finova experience, notifications, AI features and account preferences.",
@@ -82,28 +88,40 @@ const pages = {
   },
 };
 
+const implementedPages = [
+  "dashboard",
+  "expenses",
+  "income",
+  "budgets",
+  "goals",
+  "analytics",
+  "ai",
+  "receipts",
+  "settings",
+];
+
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-
-  const [isDesktop, setIsDesktop] = useState(() => {
-    return window.innerWidth >= 1024;
-  });
-
   const [activePage, setActivePage] = useState("dashboard");
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1024px)").matches
+  );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
 
-    const handleChange = () => {
+    const handleResize = () => {
       setIsDesktop(mediaQuery.matches);
     };
 
-    handleChange();
+    handleResize();
 
-    mediaQuery.addEventListener("change", handleChange);
+    mediaQuery.addEventListener("change", handleResize);
 
     return () => {
-      mediaQuery.removeEventListener("change", handleChange);
+      mediaQuery.removeEventListener("change", handleResize);
     };
   }, []);
 
@@ -118,13 +136,42 @@ function App() {
     });
   };
 
-  const currentPage = pages[activePage];
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    setActivePage("dashboard");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "instant",
+    });
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="login"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 1.02 }}
+          transition={{ duration: 0.6 }}
+          className="min-h-screen"
+        >
+          <LoginPage onLogin={handleLogin} />
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  const currentPage = pages[activePage] || pages.dashboard;
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#020817] text-white">
+    <div className="relative min-h-screen overflow-x-hidden text-white">
+      {/* Global cinematic background */}
       <BackgroundAtmosphere />
 
-      <div className="relative z-10">
+      {/* Application shell */}
+      <div className="relative z-10 min-h-screen">
         <Sidebar
           collapsed={collapsed}
           setCollapsed={setCollapsed}
@@ -132,76 +179,60 @@ function App() {
           onNavigate={handleNavigate}
         />
 
-        <motion.section
-          animate={{
-            marginLeft: isDesktop
+        <div
+          className={`min-h-screen transition-[margin] duration-300 ${
+            isDesktop
               ? collapsed
-                ? 88
-                : 270
-              : 0,
-          }}
-          transition={{
-            duration: 0.4,
-            ease: [0.4, 0, 0.2, 1],
-          }}
-          className="min-h-screen"
+                ? "ml-[88px]"
+                : "ml-[270px]"
+              : "ml-0"
+          }`}
         >
-          <div className="px-4 pt-5 sm:px-6 lg:px-8 xl:px-10">
-            <div className="mx-auto w-full max-w-[1700px]">
-              <TopBar />
-            </div>
-          </div>
+          <TopBar onNavigate={handleNavigate} />
 
-          <main className="px-4 pb-12 pt-1 sm:px-6 lg:px-8 xl:px-10">
-            <div className="mx-auto w-full max-w-[1700px]">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activePage}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {activePage === "dashboard" && <DashboardPage />}
+          <main className="px-4 pb-10 pt-20 sm:px-6 lg:px-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activePage}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{
+                  duration: 0.28,
+                  ease: "easeOut",
+                }}
+              >
+                {activePage === "dashboard" && <DashboardPage />}
 
-                  {activePage === "expenses" && <ExpensesPage />}
+                {activePage === "expenses" && <ExpensesPage />}
 
-{activePage === "income" && <IncomePage />}
+                {activePage === "income" && <IncomePage />}
 
-{activePage === "budgets" && <BudgetsPage />}
+                {activePage === "budgets" && <BudgetsPage />}
 
-{activePage === "goals" && <GoalsPage />}
-{activePage === "analytics" && <AnalyticsPage />}
-{activePage === "ai" && <AIAssistantPage />}
-{activePage === "receipts" && <ReceiptsPage />}
-{activePage === "settings" && <SettingsPage />}
+                {activePage === "goals" && <GoalsPage />}
 
-{![
-  "dashboard",
-  "expenses",
-  "income",
-  "budgets",
-  "goals",
-  "analytics",
-  "ai",
-  "receipts",
-  "settings",
-].includes(activePage) && (
-                    <PlaceholderPage
-                      title={currentPage.title}
-                      description={currentPage.description}
-                      icon={currentPage.icon}
-                    />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                {activePage === "analytics" && <AnalyticsPage />}
+
+                {activePage === "ai" && <AIAssistantPage />}
+
+                {activePage === "receipts" && <ReceiptsPage />}
+
+                {activePage === "settings" && <SettingsPage />}
+
+                {!implementedPages.includes(activePage) && (
+                  <PlaceholderPage
+                    title={currentPage.title}
+                    description={currentPage.description}
+                    icon={currentPage.icon}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </main>
-        </motion.section>
+        </div>
       </div>
-
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[5] h-32 bg-gradient-to-t from-[#020817]/20 to-transparent" />
-    </main>
+    </div>
   );
 }
 
